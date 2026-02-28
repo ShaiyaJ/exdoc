@@ -1,6 +1,6 @@
 <div align="center">
     <h1>exdoc</h1>
-    <h2>~ <b>Ex</b>tendable <b>Doc</b>ument format ~</h2>
+    <p>~ <b>Ex</b>tendable <b>Doc</b>ument format ~</p>
 </div>
 
 ## About
