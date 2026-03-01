@@ -27,8 +27,6 @@ def parse_exdoc(s):
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
 
-            print(f"Running {path} with {content}")
-
             ret += run_program(path, content)
         else:
             ret += c 
@@ -78,7 +76,12 @@ def parse_multi_line_prog_content(s):
 
     return (ret, s)
 
+if __name__ == "__main__":
+    inp = sys.stdin.read()
+    out = parse_exdoc(inp)
+    sys.stdout.write(out)
 
+"""
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Incorrect arguments parsed...\nUsage:\n\texdoc <input path> <output path>")
@@ -93,3 +96,4 @@ if __name__ == "__main__":
 
     with open(out_path, "w") as out_file:
         out_file.write(out)
+"""
