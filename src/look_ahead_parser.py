@@ -6,31 +6,30 @@ def parse_exdoc(s):
     ret = ""
 
     while s != '':
-        target = s[1:]
         c = s[0]
 
         if c == '\\': 
-            res += target[1]
+            res += s[1]
             s = s[2:]
-        elif target.startswith("##*"):
+        elif s.startswith("##*"):
             s = s[2:]
             path, s = parse_program_path(s)
             content, s = parse_multi_line_prog_content(s)
 
             ret += parse_exdoc(run_program(path, content))
-        elif target.startswith("##"):
+        elif s.startswith("##"):
             s = s[2:]
             path, s = parse_program_path(s)
             content, s = parse_multi_line_prog_content(s)
 
             ret += run_program(path, content)
-        elif target.startswith("#*"):
+        elif s.startswith("#*"):
             s = s[1:]
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
 
             ret += parse_exdoc(run_program(path, content))
-        elif target.startswith("#"):
+        elif s.startswith("#"):
             s = s[1:]
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
@@ -59,10 +58,14 @@ def parse_program_path(s):
         end_chr = first_chr
 
     # Take up until the end_chr to extract the path
-    prepend = '' if end_chr == '\'' or end_chr == '"' else first_chr
+    #prepend = '' if end_chr == '\'' or end_chr == '"' else first_chr
 
-    ret = prepend + "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
-    s_without_path = s[ len(ret): ]
+    #ret = prepend + "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
+    ret = "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
+    s_without_path = s[ (len(ret) + len(end_chr) + 1): ]
+
+    #print(end_chr)
+    #while True: pass
 
     return (ret, s_without_path)
 
