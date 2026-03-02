@@ -13,15 +13,23 @@ def parse_exdoc(s):
             res += target[1]
             s = s[2:]
         elif target.startswith("##*"):
-            pass
+            s = s[2:]
+            path, s = parse_program_path(s)
+            content, s = parse_multi_line_prog_content(s)
+
+            ret += parse_exdoc(run_program(path, content))
         elif target.startswith("##"):
             s = s[2:]
             path, s = parse_program_path(s)
-            content, s = parse_inline_prog_content(s)
+            content, s = parse_multi_line_prog_content(s)
 
             ret += run_program(path, content)
         elif target.startswith("#*"):
-            pass
+            s = s[1:]
+            path, s = parse_program_path(s)
+            content, s = parse_inline_prog_content(s)
+
+            ret += parse_exdoc(run_program(path, content))
         elif target.startswith("#"):
             s = s[1:]
             path, s = parse_program_path(s)
@@ -80,20 +88,3 @@ if __name__ == "__main__":
     inp = sys.stdin.read()
     out = parse_exdoc(inp)
     sys.stdout.write(out)
-
-"""
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Incorrect arguments parsed...\nUsage:\n\texdoc <input path> <output path>")
-        exit(1)
-
-    in_path = sys.argv[1]
-    out_path = sys.argv[2]
-
-    with open(in_path, "r") as in_file:
-        raw = in_file.read()
-    out = parse_exdoc(raw)
-
-    with open(out_path, "w") as out_file:
-        out_file.write(out)
-"""
