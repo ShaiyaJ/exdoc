@@ -2,7 +2,7 @@ from itertools import takewhile
 import sys
 import subprocess
 
-def parse_exdoc(s):
+def parse_exdoc(s, ext=".txt"):
     ret = ""
 
     while s != '':
@@ -16,25 +16,25 @@ def parse_exdoc(s):
             path, s = parse_program_path(s)
             content, s = parse_multi_line_prog_content(s)
 
-            ret += parse_exdoc(run_program(path, content))
+            ret += parse_exdoc(run_program(path, content, ext))
         elif s.startswith("##"):
             s = s[2:]
             path, s = parse_program_path(s)
             content, s = parse_multi_line_prog_content(s)
 
-            ret += run_program(path, content)
+            ret += run_program(path, content, ext)
         elif s.startswith("#*"):
             s = s[2:]
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
 
-            ret += parse_exdoc(run_program(path, content))
+            ret += parse_exdoc(run_program(path, content, ext))
         elif s.startswith("#"):
             s = s[1:]
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
 
-            ret += run_program(path, content)
+            ret += run_program(path, content, ext)
         else:
             ret += c 
             s = s[1:]
@@ -68,8 +68,11 @@ def parse_program_path(s):
 
     return (ret, s_without_path)
 
-def run_program(program_path, inp):
-    return subprocess.check_output(program_path, input=inp.encode("utf-8"), shell=True).decode("utf-8")
+def run_program(program_path, inp, ext):
+    full_inp = (ext + "\n" + inp).encode("utf-8")
+    out = subprocess.check_output(program_path, input=full_inp, shell=True)
+
+    return out.decode("utf-8")
 
 def parse_inline_prog_content(s):
     ret = "".join( [c for c in takewhile(lambda x: x != '\n', s)] )
@@ -89,6 +92,8 @@ def parse_multi_line_prog_content(s):
     return (ret, s_without_delim)
 
 if __name__ == "__main__":
+    ext = ".txt" if len(sys.argv) == 1 else sys.argv[-1]
+
     inp = sys.stdin.read()
-    out = parse_exdoc(inp)
+    out = parse_exdoc(inp, ext)
     sys.stdout.write(out)
