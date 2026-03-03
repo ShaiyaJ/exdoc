@@ -1,6 +1,3 @@
-# ./bold test
-#   ./bold test
-#  ./bold test
-# "./bold" test
-#   "./bold" test
-#  "./bold" test
+# "cat -" test
+#   "cat -" test
+#  "cat -" test

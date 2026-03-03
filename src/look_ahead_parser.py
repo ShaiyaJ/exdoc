@@ -9,10 +9,10 @@ def parse_exdoc(s):
         c = s[0]
 
         if c == '\\': 
-            res += s[1]
+            ret += s[1]
             s = s[2:]
         elif s.startswith("##*"):
-            s = s[2:]
+            s = s[3:]
             path, s = parse_program_path(s)
             content, s = parse_multi_line_prog_content(s)
 
@@ -24,7 +24,7 @@ def parse_exdoc(s):
 
             ret += run_program(path, content)
         elif s.startswith("#*"):
-            s = s[1:]
+            s = s[2:]
             path, s = parse_program_path(s)
             content, s = parse_inline_prog_content(s)
 
@@ -43,11 +43,13 @@ def parse_exdoc(s):
 
 def parse_program_path(s):        
     # Remove trailing whitespace to find the first character
-    c = ' '
+    c = s[0]
 
     while c.isspace():
         c = s[0]
         s = s[1:]
+        #print(s)
+        #print("--")
 
     first_chr = c
 
@@ -63,9 +65,6 @@ def parse_program_path(s):
     #ret = prepend + "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
     ret = "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
     s_without_path = s[ (len(ret) + len(end_chr) + 1): ]
-
-    #print(end_chr)
-    #while True: pass
 
     return (ret, s_without_path)
 
@@ -85,7 +84,9 @@ def parse_multi_line_prog_content(s):
         ret += s[0]
         s = s[1:]
 
-    return (ret, s)
+    s_without_delim = s[2:]
+
+    return (ret, s_without_delim)
 
 if __name__ == "__main__":
     inp = sys.stdin.read()
