@@ -77,26 +77,33 @@ def run_program(program_path, inp, ext):
 def parse_inline_prog_content(s):
     ret = []
     esc = False
-    delim = False
+    control_chrs = 0
 
     for c in takewhile(lambda x: x != '\n', s):
-        if esc:
+        if esc and c == '#':    # Unless it's escaped
+            ret.pop()           # Remove trailing '\'
             ret.append(c)
+
             esc = False
+            control_chrs += 2
+
             continue
 
-        if c == '\'':
-            esc = True
-            continue
-
-        if c == '#': 
-            delim = True
+        elif c == '#':          # Treat # as the end of the command input
+            control_chrs += 1
             break
 
-        ret.append(c)
+        elif c == '\\':         # Set escape
+            esc = True
+
+        else:                   # Otherwise append character and unset esc
+            ret.append(c)
+            
+            if esc:
+                esc = False
         
     ret = "".join(ret)
-    ret_len = len(ret) + 1 if delim else len(ret)
+    ret_len = len(ret) + control_chrs
 
     s_without_content = s[ret_len:]
 
