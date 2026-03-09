@@ -1,4 +1,4 @@
-from itertools import takewhile
+from itertools import takewhile, tee
 import sys
 import subprocess
 
@@ -60,7 +60,7 @@ def parse_program_path(s):
         end_chr = first_chr
 
     # Take up until the end_chr to extract the path
-    #prepend = '' if end_chr == '\'' or end_chr == '"' else first_chr
+    #prepend = '' if end_chr == '\'' or end_chr == '"' else first_chr       # TODO: see if this is necessary
 
     #ret = prepend + "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
     ret = "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
@@ -75,10 +75,24 @@ def run_program(program_path, inp, ext):
     return out.decode("utf-8")
 
 def parse_inline_prog_content(s):
-    ret = "".join( [c for c in takewhile(lambda x: x != '\n', s)] )
-    s_without_content = s[ len(ret): ]
+    ret = []
+    prev = ''
+    esc_count = 1
 
-    return (ret, s_without_content)
+    for c in takewhile(lambda x: x != '\n', s):
+        if prev != '\\' and c == '#':
+            break
+        elif prev == '\\' and c == '#':
+            ret.pop()
+            esc_count += 1
+
+        ret.append(c)
+        prev = c
+
+    content = "".join(ret)
+    s_without_content = s[ len(content)+esc_count: ]
+
+    return (content, s_without_content)
 
 def parse_multi_line_prog_content(s):
     ret = ""
