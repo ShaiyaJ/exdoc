@@ -1,6 +1,12 @@
 from itertools import takewhile, tee
 import sys
 import subprocess
+import os
+
+# Updating path
+root = os.path.dirname(__file__)
+PROG_ENVIRON = os.environ.copy()
+PROG_ENVIRON["PATH"] += f":{root}/std:{root}/std/layout:{root}/std/formatting:{root}/std/illustrations"
 
 def parse_exdoc(s, ext=".txt"):
     ret = ""
@@ -46,10 +52,8 @@ def parse_program_path(s):
     c = s[0]
 
     while c.isspace():
-        c = s[0]
         s = s[1:]
-        #print(s)
-        #print("--")
+        c = s[0]
 
     first_chr = c
 
@@ -58,19 +62,21 @@ def parse_program_path(s):
 
     if first_chr == '\'' or first_chr == '"':
         end_chr = first_chr
+        s = s[1:]
 
-    # Take up until the end_chr to extract the path
-    #prepend = '' if end_chr == '\'' or end_chr == '"' else first_chr       # TODO: see if this is necessary
+    # Take up until the end_chr to extract the path 
+    ret = "".join( [x for x in takewhile(lambda n: n != end_chr, s)] )
+    
+    path_size = len(ret) + 1
+    path_size += 1 if end_chr != ' ' else 0
 
-    #ret = prepend + "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
-    ret = "".join( [c for c in takewhile(lambda x: x != end_chr, s)] )
-    s_without_path = s[ (len(ret) + len(end_chr) + 1): ]
+    s_without_path = s[path_size:]
 
     return (ret, s_without_path)
 
 def run_program(program_path, inp, ext):
     full_inp = (ext + "\n" + inp).encode("utf-8")
-    out = subprocess.check_output(program_path, input=full_inp, shell=True)
+    out = subprocess.check_output(program_path, input=full_inp, shell=True, env=PROG_ENVIRON)
 
     return out.decode("utf-8")
 
