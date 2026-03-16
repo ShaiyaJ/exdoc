@@ -1,7 +1,7 @@
 # CLI wrapper for the parser
 import os.path
 import sys
-from look_ahead_parser import parse_exdoc 
+from .look_ahead_parser import parse_exdoc 
 
 def main():
     # Check arguments and assign arguments to find input and output paths
