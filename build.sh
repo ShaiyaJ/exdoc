@@ -22,6 +22,6 @@ for file in $files; do
     name=${basen%.*}        # name.go -> name
     path=${file%\/*}        # /path/name.go -> /path (without trailing '/')
 
-    go build "$file" -o "$path/$name"
+    gccgo "$file" -o "$path/$name"
     rm $file                # Delete original source
 done
