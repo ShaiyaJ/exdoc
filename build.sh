@@ -13,6 +13,7 @@ rm -rf ./build/src/
 
 # Compiling go files
 export GO111MODULE=auto
+buildflags="-Os -s -g0 -ffunction-sections -fdata-sections"
 
 files=$(ls ./build/**/**/*.go)
 
@@ -22,6 +23,6 @@ for file in $files; do
     name=${basen%.*}        # name.go -> name
     path=${file%\/*}        # /path/name.go -> /path (without trailing '/')
 
-    gccgo "$file" -o "$path/$name"
+    gccgo "$file" $buildflags -o "$path/$name"
     rm $file                # Delete original source
 done
