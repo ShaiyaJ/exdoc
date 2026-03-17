@@ -1,9 +1,9 @@
 # CLI wrapper for the parser
 import os.path
 import sys
-from look_ahead_parser import parse_exdoc 
+from .look_ahead_parser import parse_exdoc 
 
-if __name__ == "__main__":
+def main():
     # Check arguments and assign arguments to find input and output paths
     if len(sys.argv) != 3:
         print("Incorrect arguments parsed...\nUsage:\n\texdoc <input path> <output path>")
@@ -23,3 +23,6 @@ if __name__ == "__main__":
     # Write the output to the target output file
     with open(out_path, "w") as out_file:
         out_file.write(out)
+
+if __name__ == "__main__":
+    main()
