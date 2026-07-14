@@ -4,54 +4,56 @@ use strings;
 use io;
 use os;
 
-fn btoi(b: bool) int = { // TODO: don't do this.
-    if (b) 
-        return 1;
-    return 0;
+const SUPPRESS_CAPTURE_GROUP = 1;
+const RECURSIVE_CAPTURE_GROUP = 2;
+const FILENAME_CAPTURE_GROUP = 3;
+const CONTENT_CAPTURE_GROUP = 4;
+
+fn exdoc_re_generator() regex::regex = {
+    return regex::compile(`#`             // Match any #
+                          `(!)*`          // Match a potential !
+                          `(\*)*`         // Match a potential *
+                          ` *`            // Zero or more spaces between # and the filename
+                          `(.*)`          // The file name
+                          `[\n ]*`        // Zero or more spaces/newlines between the filename and the content
+                          `<([\s\S]*)`    // Any characters inside <>
+                          `([^\\])>`)!;    // Not including \> (escaped >)
 };
 
-// Runs the result of a matched block (excluding #s)
-fn process_block(raw: str) str = {
-    const raw_utf8 = strings::toutf8(raw);
-
-    const suppress_filetype = (raw_utf8[0] == '!' ^^ raw_utf8[1] == '!');
-    const recursive = (raw_utf8[0] == '*' ^^ raw_utf8[1] == '*');
-
-    const raw = strings::sub(raw, btoi(suppress_filetype): size + btoi(recursive): size); // Trimming off !/*
-    const raw = strings::ltrim(raw); // Trimming off whitespace
-
-    const file = "";        // TODO: get file (headache because valid UNIX paths can contain " and ' and \ ...
-    const content = "";     // TODO: get content
+// Runs the result of a matched block
+fn process_block(raw: regex::result) str = {
+    const suppress_filetype = len(raw[SUPPRESS_CAPTURE_GROUP].content) != 0;
+    const recursive = len(raw[RECURSIVE_CAPTURE_GROUP].content) != 0;
+    const file = raw[FILENAME_CAPTURE_GROUP];
+    const content = raw[CONTENT_CAPTURE_GROUP];
 
     return "";              // TODO: run the command {file} with {content} as the stdin
 };
 
-// Applies a regex pattern to a string and replaces string content with process_block
-// Expects that the regex was to match a valid exdoc block in capture group 1 - result must be free'd
-fn apply_pattern(target: str, pattern: str) str = {
-    const re = regex::compile(pattern)!;
-    defer regex::finish(&re);
+// Processes an entire document, matching all exdoc blocks
+fn process_document(target: str) str = {
+    const exdoc_re = exdoc_re_generator();
+    defer regex::finish(&exdoc_re);
 
-    const results = regex::findall(&re, target);
+    const results = regex::findall(&exdoc_re, target);
     defer regex::result_freeall(results);
+
+    fmt::println(len(results))!;
 
     let copy = strings::dup(target);
 
     for (let result .. results) {
-        copy = strings::replace(copy, result[1].content, process_block(result[1].content));
+        fmt::println(result[0].content)!;
+        fmt::println(result[SUPPRESS_CAPTURE_GROUP].content)!;
+        fmt::println(result[FILENAME_CAPTURE_GROUP].content)!;
+        fmt::println(result[CONTENT_CAPTURE_GROUP].content)!;
+
+        copy = strings::replace(copy, result[0].content, process_block(result));
     };
 
     return copy;
 };
 
-// Processes an entire document, matching all exdoc blocks
-fn process_document(target: str) str = {
-    const doubles = apply_pattern(target, `##([\s\S]*?)##`);
-    defer free(doubles);
-
-    const singles = apply_pattern(doubles, `#(.*?)#`);
-    return singles;
-};
 
 export fn main() void = {
     const input_content = match (io::drain(os::stdin)) {
@@ -69,4 +71,34 @@ export fn main() void = {
     };
 
     fmt::println( process_document(input_content) )!;
+};
+
+@test fn exdoc_re_test() void = {
+    const exdoc_re = exdoc_re_generator();
+    defer regex::finish(&exdoc_re);
+
+    const fails = [
+        "#this is a test",
+        "This is a test",
+        "# this \\<is a test>",
+        "# this <is a test\\>",
+        "\\# this <is a test>",
+    ];
+
+    const passes = [
+        "#this <is a test>",
+        "#this<is a test>",
+        "# this<is a test>",
+        "# this <is a test>",
+        "# this <\nis a test>",
+        "# this <\nis a test\n>",
+        "# this \n<\nis a test\n>",
+        "\\## this <is a test>",
+    ];
+
+    for (let s .. fails)
+        assert(!regex::test(&exdoc_re, s), fmt::asprintf("Wrong match at \"{}\"", s));
+
+    for (let s .. passes)
+        assert(regex::test(&exdoc_re, s), fmt::asprintf("Didn't match at \"{}\"", s));
 };
