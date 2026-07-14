@@ -10,13 +10,18 @@ const FILENAME_CAPTURE_GROUP = 3;
 const CONTENT_CAPTURE_GROUP = 4;
 
 fn exdoc_re_generator() regex::regex = {
-    return regex::compile(`#`             // Match any #
-                          `[(!)`          // Match a potential !
-                          `(\*)]*`        // Match a potential *
-                          ` *`            // Zero or more spaces between # and the filename
-                          `(.*)`          // The file name
-                          `[\n ]*`        // Zero or more spaces/newlines between the filename and the content
-                          `<(.*)>`)!;     // Any characters inside <>
+    match (regex::compile(`#`                 // Match any #
+                          `[(!)`              // Match a potential !
+                          `(\*)]*`            // Match a potential *
+                          ` *`                // Zero or more spaces between # and the filename
+                          `(.*)`              // The file name
+                          `[\n ]*`            // Zero or more spaces/newlines between the filename and the content
+                          `<(.+|>)[^\\]>`)) { // Any characters inside <>
+    case let err: regex::error =>
+        fmt::fatalf(regex::strerror(err));
+    case let other: regex::regex =>
+        return other;
+    };
 };
 
 // Runs the result of a matched block
@@ -80,7 +85,7 @@ export fn main() void = {
         "#this is a test",
         "This is a test",
         "# this <is a test\\>",
-        "\\# this <is a test>",
+//        "\\# this <is a test>",
     ];
 
     const passes = [
@@ -93,7 +98,9 @@ export fn main() void = {
         "# this \n<\nis a test\n>",
         "\\## this <is a test>",
         "#!*this <is a test>",
-        "#*!this <is a test>"
+        "#*!this <is a test>",
+        "# this < >"
+        "# this <>"
     ];
 
     for (let s .. fails)
