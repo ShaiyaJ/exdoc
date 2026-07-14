@@ -10,9 +10,9 @@ const FILENAME_CAPTURE_GROUP = 3;
 const CONTENT_CAPTURE_GROUP = 4;
 
 fn exdoc_re_generator() regex::regex = {
-    match (regex::compile(`#`                 // Match any #
-                          `[(!)`              // Match a potential !
-                          `(\*)]*`            // Match a potential *
+    match (regex::compile(`#`                 // Match any # TODO: ^|[^\\]#
+                          `(!){0,1}`          // Match a potential !
+                          `(\*){0,1}`         // Match a potential *
                           ` *`                // Zero or more spaces between # and the filename
                           `(.*)`              // The file name
                           `[\n ]*`            // Zero or more spaces/newlines between the filename and the content
@@ -43,17 +43,16 @@ fn process_document(target: str) str = {
     defer regex::result_freeall(results);
 
     fmt::println(len(results))!;
+    fmt::println(len(results[0]))!;
+    fmt::println(results[0][0].content)!;
+    fmt::println(results[0][1].content)!;
+    fmt::println(results[0][2].content)!;
 
     let copy = strings::dup(target);
 
-    for (let result .. results) {
-        fmt::println(result[0].content)!;
-        fmt::println(result[SUPPRESS_CAPTURE_GROUP].content)!;
-        fmt::println(result[FILENAME_CAPTURE_GROUP].content)!;
-        fmt::println(result[CONTENT_CAPTURE_GROUP].content)!;
-
-        copy = strings::replace(copy, result[0].content, process_block(result));
-    };
+//    for (let result .. results) {
+        //copy = strings::replace(copy, result[0].content, process_block(result));
+//    };
 
     return copy;
 };
@@ -77,6 +76,7 @@ export fn main() void = {
     fmt::println( process_document(input_content) )!;
 };
 
+// TODO: separate into separate match tests
 @test fn exdoc_re_test() void = {
     const exdoc_re = exdoc_re_generator();
     defer regex::finish(&exdoc_re);
@@ -85,7 +85,7 @@ export fn main() void = {
         "#this is a test",
         "This is a test",
         "# this <is a test\\>",
-//        "\\# this <is a test>",
+//        "\\# this <is a test>", TODO
     ];
 
     const passes = [
