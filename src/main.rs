@@ -74,7 +74,7 @@ fn process_text(text: &str, re: &Regex, ext: &str) -> String {
 fn main() -> io::Result<()> {
     // Get string data from stdin
     let mut data: Vec<u8> = vec!();
-    let _ = io::stdin().read_to_end(&mut data);
+    let _ = io::stdin().read_to_end(&mut data)?;
     
     let string_data = str::from_utf8(&data)
                         .expect("Non UTF-8 compliant input");
