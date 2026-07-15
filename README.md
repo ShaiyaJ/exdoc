@@ -4,30 +4,73 @@
 </div>
 
 ## About
-
-Exdoc is an extremely simple idea for an extendable document format. 
-
-It is a text-based preprocessor. It uses the `#` to determine where to preprocess text.
+Exdoc is a file preprocessor which uses executable commands to determine content.
 
 ```
-# <path> inline text
+# (command) <content>
 ```
 
-```
-## <path>
-multi-line 
-text
-##
-```
-
-In these two cases, `<path>` will be executed as a program. The program will have the target file format and the given text supplied in stdin, and whatever the program produces on stdout will be replaced in the final document.
-
-This makes it easy to extend using most conventional programming languages. You can create your own tools to perform specific tasks. You can even make these tools support multiple formats.
-
-## Use
-
-To use exdoc simply supply the python command with an input and output path like so:
+Is equivalent to
 
 ```
-python3 src/main.py input.txt output.txt
+printf content | command
 ```
+
+Whatever the above produces on stdout is the output text of the document
+
+Furthermore, there's modifiers that augment the behaviour of exdoc blocks...
+
+### `!`
+
+```
+#!* (command) <content>
+```
+
+`!` suppresses the filetype from being given to `command`.
+
+By default exdoc will output the target filetype in the first line of stdin - some commands may mess up when this is done, e.g.
+
+```
+# (cat -) <test>
+```
+
+Will produce
+
+```
+txt
+test
+```
+
+But 
+
+```
+#! (cat -) <test>
+```
+
+Will produce
+
+```
+test
+```
+
+### `*`
+```
+#* (command) <content>
+```
+
+`*` evaluates the command output again - it enables recursion, e.g.
+
+```
+#! (cat -) <#! (cat -) <test\>>
+```
+
+Will produce
+
+```
+test
+```
+
+Note the `\>`, which will be replaced with `>` when processing.
+
+### `!*`
+Combines the effects of `!` and `*`.
