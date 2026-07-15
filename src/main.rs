@@ -1,5 +1,5 @@
 use regex::{Captures, Regex};
-use std::{io, io::prelude::*, process::Command};
+use std::{io, io::prelude::*, process::Command, process::Stdio};
 
 const RAW_RE: &str = concat!(
     r"(?:^#|[^\\]#)",           // Match the # at the start of the input or a # without a \ before it
@@ -10,26 +10,49 @@ const RAW_RE: &str = concat!(
     r"[\n ]*",                  // Allow for any amount of whitespace or newlines until the content
     r"<(?<content>[\s\S]*)>");  // Match any content inbetween <>
 
-fn process_text(text: &str, re: &Regex) -> String {
+fn process_text(text: &str, re: &Regex, ext: &str) -> String {
     Regex::replace_all(re, text, |caps: &Captures| -> String {
         let suppress_ext = caps.name("suppress_ext").is_some();
         let recursive = caps.name("recursive").is_some();
         let command = caps.name("command").expect("Couldn't determine command").as_str();
         let content = caps.name("content").expect("Couldn't determine content").as_str();
 
-        let command_result = Command::new(command)
-            .output()
-            .expect("Command failed")
-            .stdout;
+        // Opening handler      TODO: windows platform is unsupported
+        let mut command_handler = Command::new("sh")
+                                          .arg("-c")
+                                          .arg(command)
+                                          .stdin(Stdio::piped())
+                                          .stdout(Stdio::piped())
+                                          .spawn()
+                                          .expect("Failed to start command process");
 
-        let command_result_str = String::from_utf8(command_result)
-            .expect("Non UTF-8 compliant command output");
+        // Writing content to the program
+        let mut command_input = String::new();
 
-        if recursive {
-            return process_text(&command_result_str, re);
+        if !suppress_ext {
+            command_input.push_str(ext);
+            command_input.push_str("\n");
         }
 
-        return command_result_str;
+        command_input.push_str(content);
+
+        let command_input_bytes = command_input.into_bytes();
+
+        command_handler.stdin.take().expect("Failed to open command stdin")
+                             .write_all(&command_input_bytes).expect("Failed to write to command stdin");
+
+        // Running command
+        let command_output = command_handler.wait_with_output().expect("Failed to open command stdout").stdout;
+
+        let result = String::from_utf8(command_output)
+            .expect("Non UTF-8 compliant command output");
+
+        // Handling recursive blocks
+        if recursive {
+            return process_text(&result, re, ext);
+        }
+
+        return result;
     }).to_string()
 }
 
@@ -44,7 +67,8 @@ fn main() -> io::Result<()> {
     // Apply regex replace on it
     let exdoc_re = Regex::new(RAW_RE).unwrap();
     
-    print!("{}", process_text(string_data, &exdoc_re));
+    // Outputting resulting text
+    print!("{}", process_text(string_data, &exdoc_re, "txt"));
 
     Ok(())
 }
