@@ -1,0 +1,8 @@
+[package]
+name = "exdoc"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies.regex]
+version = "1.13.0"
+features = ["std"]
