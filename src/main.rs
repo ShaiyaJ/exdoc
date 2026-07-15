@@ -24,7 +24,7 @@ fn process_text(text: &str, re: &Regex, ext: &str) -> String {
                                           .stdin(Stdio::piped())
                                           .stdout(Stdio::piped())
                                           .spawn()
-                                          .expect("Failed to start command process");
+                                          .expect(&format!("Failed to start command process for {command}"));
 
         // Writing content to the program
         let mut command_input = String::new();
@@ -38,14 +38,18 @@ fn process_text(text: &str, re: &Regex, ext: &str) -> String {
 
         let command_input_bytes = command_input.into_bytes();
 
-        command_handler.stdin.take().expect("Failed to open command stdin")
-                             .write_all(&command_input_bytes).expect("Failed to write to command stdin");
+        command_handler.stdin.take()
+                             .expect(&format!("Failed to open command stdin for {command}"))
+                             .write_all(&command_input_bytes)
+                             .expect(&format!("Failed to write to command stdin for {command}"));
 
         // Running command
-        let command_output = command_handler.wait_with_output().expect("Failed to open command stdout").stdout;
+        let command_output = command_handler.wait_with_output()
+                                            .expect(&format!("Failed to open command stdout for {command}"))
+                                            .stdout;
 
         let result = String::from_utf8(command_output)
-            .expect("Non UTF-8 compliant command output");
+                            .expect(&format!("Non UTF-8 compliant command output for {command}"));
 
         // Handling recursive blocks
         if recursive {
