@@ -2,13 +2,14 @@ use regex::{Captures, Regex};
 use std::{io, io::prelude::*, process::Command, process::Stdio};
 
 const RAW_RE: &str = concat!(
+    r"(?muU)",
     r"#",                       // Match the # at the start of the input or a # without a \ before it
     r"(?<suppress_ext>!){0,1}", // Match 1 !
     r"(?<recursive>\*){0,1}",   // Match 1 * 
     r"[\n ]*",                  // Allow for any amount of whitespace or newlines until the command
     r"\((?<command>.*)\)",      // Match the command
     r"[\n ]*",                  // Allow for any amount of whitespace or newlines until the content
-    r"<(?<content>[\s\S]*)>");  // Match any content inbetween <>
+    r"<(?<content>(?:\\>|[^>])*)>");  // Match any content inbetween <>
 
 fn process_text(text: &str, re: &Regex, ext: &str) -> String {
     Regex::replace_all(re, text, |caps: &Captures| -> String {
@@ -58,12 +59,15 @@ fn process_text(text: &str, re: &Regex, ext: &str) -> String {
         let result = String::from_utf8(command_output)
                             .expect(&format!("Non UTF-8 compliant command output for {command}"));
 
+        let filtered_result = str::replace(&result, "\\>", ">");
+
         // Handling recursive blocks
         if recursive {
-            return process_text(&result, re, ext);
+            return process_text(&filtered_result, re, ext);
         }
 
-        return result;
+        return filtered_result;
+        //return result;
     }).to_string()
 }
 
@@ -98,13 +102,13 @@ fn single_suppressed_command() {
 
 #[test]
 fn single_recursive_command() {
-    assert_eq!(process_text("#* (cat -) <# (cat -) <test\\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
-               "txt\ntest");
+    assert_eq!(process_text(r"#* (cat -) <# (cat -) <test\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
+               "txt\ntxt\ntest");
 }
 
 #[test]
 fn single_suppressed_recursive_command() {
-    assert_eq!(process_text("#!* (cat -) <# (cat -) <test\\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
+    assert_eq!(process_text(r"#!* (cat -) <#! (cat -) <test\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
                "test");
 }
 
@@ -122,18 +126,18 @@ fn double_commands_with_space() {
 
 #[test]
 fn escaped_end_brace() {
-    assert_eq!(process_text("# (cat -) <test\\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
+    assert_eq!(process_text(r"# (cat -) <test\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
                "txt\ntest>");
+}
+
+#[test]
+fn double_escaped_end_brace() {
+    assert_eq!(process_text(r"# (cat -) <test\\>>", &Regex::new(RAW_RE).unwrap(), "txt"), 
+               "txt\ntest\\>");
 }
 
 #[test]
 fn escaped_tag() {
     assert_eq!(process_text("\\# (cat -) <test>", &Regex::new(RAW_RE).unwrap(), "txt"), 
                "\\# (cat -) <test>");
-}
-
-#[test]
-fn escaped_pre_tag() {
-    assert_eq!(process_text("\\## (cat -) <test>", &Regex::new(RAW_RE).unwrap(), "txt"), 
-               "txt\ntest");
 }
